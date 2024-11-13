@@ -21,7 +21,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Load configuration paths
 @st.cache_data
 def load_config():
     GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
@@ -33,10 +32,34 @@ def load_config():
         'NO_IMAGES_DIR': 'test_images/no'
     }
 
-# Load the model
+# Add function to download model
 @st.cache_resource
-def load_cached_model(model_path):
-    return load_model(model_path)
+def download_model(url):
+    try:
+        import requests
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open('model.h5', 'wb') as f:
+                f.write(response.content)
+            return 'model.h5'
+        else:
+            st.error(f"Failed to download model: {response.status_code}")
+            return None
+    except Exception as e:
+        st.error(f"Error downloading model: {str(e)}")
+        return None
+
+# Modify model loading
+@st.cache_resource
+def load_cached_model(model_url):
+    try:
+        model_path = download_model(model_url)
+        if model_path:
+            return load_model(model_path)
+        return None
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        return None
 
 # Calculate advanced metrics
 def calculate_advanced_metrics(img_array):
