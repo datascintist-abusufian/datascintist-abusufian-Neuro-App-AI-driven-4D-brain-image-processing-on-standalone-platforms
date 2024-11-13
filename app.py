@@ -228,32 +228,29 @@ def main():
     st.title("4D AI Driven Neuro App - Advanced Analytics")
     
     if selected_file:
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
-    
-    try:
-        if isinstance(selected_file, str):
-            # For URLs, use requests to get content
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            response = requests.get(selected_file, headers=headers)
-            if response.status_code == 200:
-                image = Image.open(io.BytesIO(response.content))
-            else:
-                st.error(f"Failed to load image from URL: Status code {response.status_code}")
-                return
-        else:
-            # For uploaded files
-            image = Image.open(selected_file)
-            
-        # Continue with image processing
-        analyzer = ImageAnalyzer()
-        img_array = analyzer.process_image(image)
-        result, confidence, inference_time = analyzer.predict(img_array)
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
         
-    except Exception as e:
-        st.error(f"Error loading image: {str(e)}")
-        return
+        try:
+            if isinstance(selected_file, str):
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+                response = requests.get(selected_file, headers=headers)
+                if response.status_code == 200:
+                    image = Image.open(io.BytesIO(response.content))
+                else:
+                    st.error(f"Failed to load image from URL: Status code {response.status_code}")
+                    return
+            else:
+                image = Image.open(selected_file)
+                
+            analyzer = ImageAnalyzer()
+            img_array = analyzer.process_image(image)
+            result, confidence, inference_time = analyzer.predict(img_array)
+            
+        except Exception as e:
+            st.error(f"Error loading image: {str(e)}")
+            return
         
         with tab1:
             col1, col2 = st.columns([1, 1])
@@ -284,7 +281,7 @@ def main():
             st.header("📊 Advanced Metrics")
             metrics = calculate_advanced_metrics(img_array[0])
             metrics_df = pd.DataFrame(metrics, index=[0])
-            st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
+            st.table(metrics_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
 
             plt.figure(figsize=(8, 5))
             ax = sns.barplot(x=metrics_df.columns, y=metrics_df.iloc[0])
