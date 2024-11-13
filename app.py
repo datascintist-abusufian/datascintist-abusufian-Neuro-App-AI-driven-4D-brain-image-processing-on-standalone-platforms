@@ -206,14 +206,26 @@ def main():
         st.title("🧠 Brain Tumor Detection")
         input_method = st.radio("Select Input Method", ["Upload Image", "Use Sample Images"])
         
-        if input_method == "Upload Image":
-            selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
-        else:
-            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
-            demo_images = {
-                "Tumor Cases": ["Y1.jpg", "Y2.jpg", "Y3.jpg", "Y4.jpg", "Y5.jpg"],
-                "Normal Cases": ["1 no.jpeg", "2 no.jpeg"]
-            }
+        # Update this part in the sidebar
+if input_method == "Upload Image":
+    selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
+else:
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+    
+    # Sample images with proper paths
+    demo_images = {
+        "Tumor Cases": [
+            "test_images/yes/Y1.jpg",
+            "test_images/yes/Y2.jpg",
+            "test_images/yes/Y3.jpg",
+            "test_images/yes/Y4.jpg",
+            "test_images/yes/Y5.jpg"
+        ],
+        "Normal Cases": [
+            "test_images/no/1 no.jpeg",
+            "test_images/no/2 no.jpeg"
+        ]
+    }
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
             selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
