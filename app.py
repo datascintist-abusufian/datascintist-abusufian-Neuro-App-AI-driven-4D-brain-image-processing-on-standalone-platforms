@@ -24,12 +24,13 @@ st.set_page_config(
 # Load configuration paths
 @st.cache_data
 def load_config():
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
     return {
-        'BASE_DIR': '/Users/mdabusufian/Downloads/Updated Neuorapp',
-        'MODEL_PATH': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'BrainTumor10EpochsCategorical.h5'),
-        'GIF_PATH': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'TAC_Brain_tumor_glioblastoma-Transverse_plane.gif'),
-        'YES_IMAGES_DIR': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'test_images', 'yes'),
-        'NO_IMAGES_DIR': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'test_images', 'no')
+        'BASE_DIR': '.',
+        'MODEL_PATH': f"{GITHUB_RAW_URL}BrainTumor10EpochsCategorical.h5",
+        'GIF_PATH': f"{GITHUB_RAW_URL}TAC_Brain_tumor_glioblastoma-Transverse_plane.gif",
+        'YES_IMAGES_DIR': 'test_images/yes',
+        'NO_IMAGES_DIR': 'test_images/no'
     }
 
 # Load the model
