@@ -228,21 +228,32 @@ def main():
     st.title("4D AI Driven Neuro App - Advanced Analytics")
     
     if selected_file:
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
-        
-        try:
-            if isinstance(selected_file, str):
-                response = requests.get(selected_file)
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
+    
+    try:
+        if isinstance(selected_file, str):
+            # For URLs, use requests to get content
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            response = requests.get(selected_file, headers=headers)
+            if response.status_code == 200:
                 image = Image.open(io.BytesIO(response.content))
             else:
-                image = Image.open(selected_file)
-        except Exception as e:
-            st.error(f"Error loading image: {str(e)}")
-            return
+                st.error(f"Failed to load image from URL: Status code {response.status_code}")
+                return
+        else:
+            # For uploaded files
+            image = Image.open(selected_file)
             
+        # Continue with image processing
         analyzer = ImageAnalyzer()
         img_array = analyzer.process_image(image)
         result, confidence, inference_time = analyzer.predict(img_array)
+        
+    except Exception as e:
+        st.error(f"Error loading image: {str(e)}")
+        return
         
         with tab1:
             col1, col2 = st.columns([1, 1])
