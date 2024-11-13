@@ -243,13 +243,18 @@ else:
 
     st.title("4D AI Driven Neuro App - Advanced Analytics")
     
-    if selected_file:
+   if selected_file:
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
         
-        if isinstance(selected_file, str):
-            image = Image.open(selected_file)
-        else:
-            image = Image.open(selected_file)
+        try:
+            if isinstance(selected_file, str):
+                response = requests.get(selected_file)
+                image = Image.open(io.BytesIO(response.content))
+            else:
+                image = Image.open(selected_file)
+        except Exception as e:
+            st.error(f"Error loading image: {str(e)}")
+            return
             
         analyzer = ImageAnalyzer()
         img_array = analyzer.process_image(image)
