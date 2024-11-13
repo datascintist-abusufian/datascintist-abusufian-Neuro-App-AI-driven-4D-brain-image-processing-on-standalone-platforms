@@ -1,3 +1,4 @@
+import requests  
 import os
 import numpy as np
 import streamlit as st
@@ -313,12 +314,13 @@ def main():
             - **3D Visualization**: Shows intensity values as a 3D surface plot
             """)
             
+        # With this new code:
         st.session_state.analysis_history.append({
-            "image": selected_file,
-            "result": result,
-            "confidence": confidence,
-            "inference_time": inference_time,
-            "success": result == 0
+            "timestamp": datetime.now(),
+            "result": int(result) if result is not None else None,
+            "confidence_score": float(confidence) if confidence is not None else None,
+            "inference_time": float(inference_time) if inference_time is not None else None,
+            "success": True if result is not None else False
         })
 
 # Run the app
