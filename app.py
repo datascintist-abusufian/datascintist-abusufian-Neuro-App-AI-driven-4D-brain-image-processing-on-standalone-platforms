@@ -1,0 +1,302 @@
+import os
+import numpy as np
+import streamlit as st
+from PIL import Image
+from tensorflow.keras.models import load_model
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.graph_objects as go
+import pandas as pd
+from skimage.feature import graycomatrix, graycoprops, local_binary_pattern
+import cv2
+import time
+from skimage import exposure
+from skimage.measure import label
+
+# Set up page configuration
+st.set_page_config(
+    page_title="Brain Tumor Detection",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Load configuration paths
+@st.cache_data
+def load_config():
+    return {
+        'BASE_DIR': '/Users/mdabusufian/Downloads/Updated Neuorapp',
+        'MODEL_PATH': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'BrainTumor10EpochsCategorical.h5'),
+        'GIF_PATH': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'TAC_Brain_tumor_glioblastoma-Transverse_plane.gif'),
+        'YES_IMAGES_DIR': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'test_images', 'yes'),
+        'NO_IMAGES_DIR': os.path.join('/Users/mdabusufian/Downloads/Updated Neuorapp', 'test_images', 'no')
+    }
+
+# Load the model
+@st.cache_resource
+def load_cached_model(model_path):
+    return load_model(model_path)
+
+# Calculate advanced metrics
+def calculate_advanced_metrics(img_array):
+    gray_img = cv2.cvtColor((img_array * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+    metrics = {
+        'Mean Intensity': np.mean(gray_img),
+        'Std Intensity': np.std(gray_img),
+        'Dynamic Range': np.ptp(gray_img)
+    }
+    distances = [1, 2, 3]
+    angles = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+    glcm = graycomatrix(gray_img, distances=distances, angles=angles, levels=256, symmetric=True, normed=True)
+    metrics.update({
+        'Contrast': np.mean(graycoprops(glcm, 'contrast')),
+        'Homogeneity': np.mean(graycoprops(glcm, 'homogeneity')),
+        'Energy': np.mean(graycoprops(glcm, 'energy'))
+    })
+    lbp = local_binary_pattern(gray_img, 8 * 3, 3, method='uniform')
+    metrics['LBP Variance'] = np.var(lbp)
+    return metrics
+
+# Sensitivity Analysis with detailed table
+def perform_sensitivity_analysis(model, image_array, n_iterations=10):
+    orig_pred = model.predict(image_array, verbose=0)
+    orig_result = np.argmax(orig_pred[0])
+    orig_confidence = orig_pred[0][orig_result] * 100
+    noise_impacts, blur_impacts, confidences = [], [], []
+    
+    for i in range(n_iterations):
+        noise_level = i / (n_iterations * 2)
+        noisy_image = np.clip(image_array + np.random.normal(0, noise_level, image_array.shape), 0, 1)
+        noise_pred = model.predict(noisy_image, verbose=0)
+        noise_impacts.append(np.abs(noise_pred[0][orig_result] - orig_pred[0][orig_result]) * 100)
+        confidences.append(noise_pred[0][orig_result] * 100)
+        
+        kernel_size = 2 * i + 1
+        blurred_image = cv2.GaussianBlur(image_array[0], (kernel_size, kernel_size), 0)
+        blurred_image = np.expand_dims(blurred_image, 0)
+        blur_pred = model.predict(blurred_image, verbose=0)
+        blur_impacts.append(np.abs(blur_pred[0][orig_result] - orig_pred[0][orig_result]) * 100)
+
+    stability = 100 - (np.mean(noise_impacts + blur_impacts))
+    
+    # Plotting
+    plt.figure(figsize=(10, 5))
+    plt.plot(confidences, label='Confidence Under Noise', marker='o')
+    plt.xlabel('Iterations')
+    plt.ylabel('Confidence (%)')
+    plt.legend()
+    st.pyplot(plt)
+    
+    return pd.DataFrame({
+        'Iteration': range(1, n_iterations + 1),
+        'Noise Impact (%)': noise_impacts,
+        'Blur Impact (%)': blur_impacts,
+        'Confidence (%)': confidences
+    })
+
+# ImageAnalyzer class
+class ImageAnalyzer:
+    def __init__(self):
+        self.config = load_config()
+        self.model = load_cached_model(self.config['MODEL_PATH'])
+    
+    def process_image(self, img):
+        img = img.convert('RGB').resize((64, 64))
+        img_array = np.array(img) / 255.0
+        return np.expand_dims(img_array, axis=0)
+    
+    def predict(self, img_array):
+        start_time = time.time()
+        prediction = self.model.predict(img_array, verbose=0)
+        result = np.argmax(prediction[0])
+        confidence = prediction[0][result] * 100
+        inference_time = time.time() - start_time
+        return result, confidence, inference_time
+
+    def display_slice_views(self, image_array):
+        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        
+        # Original view
+        axes[0].imshow(image_array, cmap='gray')
+        axes[0].set_title('Original View')
+        
+        # Enhanced contrast view
+        enhanced = exposure.equalize_adapthist(image_array)
+        axes[1].imshow(enhanced, cmap='gray')
+        axes[1].set_title('Enhanced Contrast')
+        
+        # Edge detection view
+        edges = cv2.Canny(image_array, 100, 200)
+        axes[2].imshow(edges, cmap='gray')
+        axes[2].set_title('Edge Detection')
+        
+        plt.tight_layout()
+        st.pyplot(fig)
+
+def plot_intensity_profile(img_array):
+    center_row = img_array[img_array.shape[0] // 2, :]
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(y=center_row, mode='lines', name='Intensity Profile'))
+    fig.update_layout(
+        title='Intensity Profile Across Center',
+        xaxis_title='Position',
+        yaxis_title='Intensity'
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+def show_region_segmentation(img_array):
+    _, binary = cv2.threshold(img_array, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    labeled_img = label(binary)
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    ax1.imshow(img_array, cmap='gray')
+    ax1.set_title('Original Image')
+    ax2.imshow(labeled_img, cmap='nipy_spectral')
+    ax2.set_title('Segmented Regions')
+    st.pyplot(fig)
+    
+def create_3d_visualization(img_array):
+    fig = go.Figure(data=[go.Surface(z=img_array)])
+    fig.update_layout(
+        title='3D Surface Plot of MRI Intensities',
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Intensity'
+        )
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    
+# Main application function
+def main():
+    config = load_config()
+    st.image(config['GIF_PATH'], width=800)  # Increased width for larger GIF size
+    
+    if 'analysis_history' not in st.session_state:
+        st.session_state.analysis_history = []
+    
+    with st.sidebar:
+        st.title("🧠 Brain Tumor Detection")
+        input_method = st.radio("Select Input Method", ["Upload Image", "Use Sample Images"])
+        if input_method == "Upload Image":
+            selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
+        else:
+            demo_images = [f for f in os.listdir(config['YES_IMAGES_DIR']) if f.endswith(('.jpg', '.jpeg', '.png'))]
+            selected_demo = st.selectbox("Choose a sample image:", demo_images)
+            selected_file = os.path.join(config['YES_IMAGES_DIR'], selected_demo)
+        
+        st.subheader("📊 System Metrics")
+        total_analyses = len(st.session_state.analysis_history)
+        successful_analyses = sum(1 for x in st.session_state.analysis_history if x.get('success', False))
+        success_rate = (successful_analyses / total_analyses) * 100 if total_analyses > 0 else 0
+        st.metric("Total Analyses", total_analyses)
+        st.metric("Success Rate", f"{success_rate:.1f}%")
+
+    st.title("4D AI Driven Neuro App - Advanced Analytics")
+    
+    if selected_file:
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
+        
+        if isinstance(selected_file, str):
+            image = Image.open(selected_file)
+        else:
+            image = Image.open(selected_file)
+            
+        analyzer = ImageAnalyzer()
+        img_array = analyzer.process_image(image)
+        result, confidence, inference_time = analyzer.predict(img_array)
+        
+        with tab1:
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.image(image, caption="Input MRI Image", use_container_width=True)
+                st.metric("Processing Time", f"{inference_time:.3f}s")
+            
+            with col2:
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=confidence,
+                    title={'text': "Detection Confidence"},
+                    gauge={'axis': {'range': [0, 100]},
+                           'bar': {'color': "darkred" if result == 1 else "green"},
+                           'threshold': {'line': {'color': "red", 'width': 4}, 'value': 70}}
+                ))
+                st.plotly_chart(fig, use_container_width=True)
+
+                if result == 1:
+                    st.error("🚨 Tumor Detected")
+                    st.warning("Please consult with a medical professional.")
+                else:
+                    st.success("✅ No Tumor Detected")
+                    st.info("Regular check-ups are recommended.")
+
+        with tab2:
+            st.header("📊 Advanced Metrics")
+            metrics = calculate_advanced_metrics(img_array[0])
+            metrics_df = pd.DataFrame(metrics, index=[0])
+            st.table(metrics_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
+
+            # Plotting Advanced Metrics with values on top of bars
+            plt.figure(figsize=(8, 5))
+            ax = sns.barplot(x=metrics_df.columns, y=metrics_df.iloc[0])
+            plt.xticks(rotation=45)
+            plt.title("Advanced Metrics")
+            for p in ax.patches:
+                ax.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2, p.get_height()),
+                            ha='center', va='bottom')
+            st.pyplot(plt)
+        
+        with tab3:
+            st.header("📈 Sensitivity Analysis")
+            analysis_df = perform_sensitivity_analysis(analyzer.model, img_array)
+            st.table(analysis_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
+        
+        with tab4:
+            st.header("📜 Historical Data")
+            if st.session_state.analysis_history:
+                historical_df = pd.DataFrame(st.session_state.analysis_history)
+                st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
+                
+        # Advanced Visualizations Tab
+        with tab5:
+            st.header("Advanced MRI Visualizations")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("Multi-View Analysis")
+                gray_img = cv2.cvtColor((img_array[0] * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
+                analyzer.display_slice_views(gray_img)
+                
+                st.subheader("Intensity Profile")
+                plot_intensity_profile(gray_img)
+            
+            with col2:
+                st.subheader("Region Segmentation")
+                show_region_segmentation(gray_img)
+                
+                st.subheader("3D Visualization")
+                create_3d_visualization(gray_img)
+
+            # Add explanatory text
+            st.markdown("""
+            ### Visualization Explanations
+            - **Multi-View Analysis**: Shows original, contrast-enhanced, and edge-detected views
+            - **Intensity Profile**: Shows intensity values across the center of the image
+            - **Region Segmentation**: Identifies and labels distinct regions in the image
+            - **3D Visualization**: Shows intensity values as a 3D surface plot
+            """)
+            
+        st.session_state.analysis_history.append({
+            "image": selected_file,
+            "result": result,
+            "confidence": confidence,
+            "inference_time": inference_time,
+            "success": result == 0
+        })
+
+# Run the app
+if __name__ == "__main__":
+    main()
