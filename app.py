@@ -292,7 +292,7 @@ def main():
             st.header("📜 Historical Data")
             if st.session_state.analysis_history:
                 historical_df = pd.DataFrame(st.session_state.analysis_history)
-                st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}))
+                st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
                 
         with tab5:
             st.header("Advanced MRI Visualizations")
