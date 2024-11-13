@@ -227,10 +227,11 @@ def main():
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
             
             # Create full URL for selected image
-            if case_type == "Tumor Cases":
-                selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
-            else:
-                selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
+            # Fix this part
+if case_type == "Tumor Cases":
+    selected_file = f"{GITHUB_RAW_URL}{selected_demo}"  # Remove extra 'Y' since it's already in filename
+else:
+    selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
         
         # System metrics should be inside sidebar
         st.subheader("📊 System Metrics")
