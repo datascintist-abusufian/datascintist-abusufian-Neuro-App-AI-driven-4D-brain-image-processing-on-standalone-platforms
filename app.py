@@ -194,42 +194,44 @@ def create_3d_visualization(img_array):
     )
     st.plotly_chart(fig, use_container_width=True)
     
-# Main application function
 def main():
     config = load_config()
-    st.image(config['GIF_PATH'], width=800)  # Increased width for larger GIF size
+    st.image(config['GIF_PATH'], width=800)
     
     if 'analysis_history' not in st.session_state:
         st.session_state.analysis_history = []
     
     with st.sidebar:
         st.title("🧠 Brain Tumor Detection")
-        # In main() function, modify the sample image selection:
-if input_method == "Upload Image":
-    selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
-else:
-    GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
-    
-    # Sample images from both yes and no folders
-    demo_images = {
-        "Tumor Cases": [
-            "Y1.jpg", "Y2.jpg", "Y3.jpg", "Y4.jpg", "Y5.jpg"
-        ],
-        "Normal Cases": [
-            "1 no.jpeg", "2 no.jpeg"  # Add your no-tumor image filenames
-        ]
-    }
-    
-    # Two-step selection
-    case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
-    selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
-    
-    # Create full URL for selected image
-    if case_type == "Tumor Cases":
-        selected_file = f"{GITHUB_RAW_URL}Y{selected_demo}"
-    else:
-        selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
+        input_method = st.radio("Select Input Method", ["Upload Image", "Use Sample Images"])
         
+        # Correct indentation for this part
+        if input_method == "Upload Image":
+            selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
+        else:
+            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+            
+            # Sample images from both yes and no folders
+            demo_images = {
+                "Tumor Cases": [
+                    "Y1.jpg", "Y2.jpg", "Y3.jpg", "Y4.jpg", "Y5.jpg"
+                ],
+                "Normal Cases": [
+                    "1 no.jpeg", "2 no.jpeg"
+                ]
+            }
+            
+            # Two-step selection
+            case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
+            selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
+            
+            # Create full URL for selected image
+            if case_type == "Tumor Cases":
+                selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
+            else:
+                selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
+        
+        # System metrics should be inside sidebar
         st.subheader("📊 System Metrics")
         total_analyses = len(st.session_state.analysis_history)
         successful_analyses = sum(1 for x in st.session_state.analysis_history if x.get('success', False))
