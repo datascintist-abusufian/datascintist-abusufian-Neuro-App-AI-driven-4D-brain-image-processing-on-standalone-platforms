@@ -273,7 +273,7 @@ def main():
             st.header("📊 Advanced Metrics")
             metrics = calculate_advanced_metrics(img_array[0])
             metrics_df = pd.DataFrame(metrics, index=[0])
-            st.table(metrics_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
+            st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
 
             plt.figure(figsize=(8, 5))
             ax = sns.barplot(x=metrics_df.columns, y=metrics_df.iloc[0])
