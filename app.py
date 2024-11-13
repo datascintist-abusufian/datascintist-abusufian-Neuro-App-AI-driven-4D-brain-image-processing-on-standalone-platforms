@@ -206,34 +206,18 @@ def main():
         st.title("🧠 Brain Tumor Detection")
         input_method = st.radio("Select Input Method", ["Upload Image", "Use Sample Images"])
         
-        # Correct indentation for this part
         if input_method == "Upload Image":
             selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
         else:
             GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
-            
-            # Sample images from both yes and no folders
             demo_images = {
-                "Tumor Cases": [
-                    "Y1.jpg", "Y2.jpg", "Y3.jpg", "Y4.jpg", "Y5.jpg"
-                ],
-                "Normal Cases": [
-                    "1 no.jpeg", "2 no.jpeg"
-                ]
+                "Tumor Cases": ["Y1.jpg", "Y2.jpg", "Y3.jpg", "Y4.jpg", "Y5.jpg"],
+                "Normal Cases": ["1 no.jpeg", "2 no.jpeg"]
             }
-            
-            # Two-step selection
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
-            
-            # Create full URL for selected image
-            # Fix this part
-if case_type == "Tumor Cases":
-    selected_file = f"{GITHUB_RAW_URL}{selected_demo}"  # Remove extra 'Y' since it's already in filename
-else:
-    selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
+            selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
         
-        # System metrics should be inside sidebar
         st.subheader("📊 System Metrics")
         total_analyses = len(st.session_state.analysis_history)
         successful_analyses = sum(1 for x in st.session_state.analysis_history if x.get('success', False))
@@ -243,7 +227,7 @@ else:
 
     st.title("4D AI Driven Neuro App - Advanced Analytics")
     
-   if selected_file:
+    if selected_file:
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
         
         try:
@@ -291,14 +275,12 @@ else:
             metrics_df = pd.DataFrame(metrics, index=[0])
             st.table(metrics_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
 
-            # Plotting Advanced Metrics with values on top of bars
             plt.figure(figsize=(8, 5))
             ax = sns.barplot(x=metrics_df.columns, y=metrics_df.iloc[0])
             plt.xticks(rotation=45)
             plt.title("Advanced Metrics")
             for p in ax.patches:
-                ax.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2, p.get_height()),
-                            ha='center', va='bottom')
+                ax.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2, p.get_height()), ha='center', va='bottom')
             st.pyplot(plt)
         
         with tab3:
@@ -310,9 +292,8 @@ else:
             st.header("📜 Historical Data")
             if st.session_state.analysis_history:
                 historical_df = pd.DataFrame(st.session_state.analysis_history)
-                st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
+                st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}))
                 
-        # Advanced Visualizations Tab
         with tab5:
             st.header("Advanced MRI Visualizations")
             
@@ -333,7 +314,6 @@ else:
                 st.subheader("3D Visualization")
                 create_3d_visualization(gray_img)
 
-            # Add explanatory text
             st.markdown("""
             ### Visualization Explanations
             - **Multi-View Analysis**: Shows original, contrast-enhanced, and edge-detected views
@@ -342,7 +322,6 @@ else:
             - **3D Visualization**: Shows intensity values as a 3D surface plot
             """)
             
-        # With this new code:
         st.session_state.analysis_history.append({
             "timestamp": datetime.now(),
             "result": int(result) if result is not None else None,
