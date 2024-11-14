@@ -222,30 +222,29 @@ def main():
         st.title("🧠 Brain Tumor Detection")
         input_method = st.radio("Select Input Method", ["Upload Image", "Use Sample Images"])
         
-        # In the sidebar section, replace the demo_images dictionary:
-if input_method == "Upload Image":
-    selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
-else:
-    GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
-    demo_images = {
-        "Tumor Cases": [
-            "Y1.jpg",
-            "Y2.jpg",
-            "Y3.jpg",
-            "Y4.jpg",
-            "Y5.jpg"
-        ],
-        "Normal Cases": [
-            "1_no.jpeg",  # Changed from "1 no.jpeg"
-            "2_no.jpeg"   # Changed from "2 no.jpeg"
-        ]
-    }
-    case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
-    selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
-    
-    # Create URL with proper encoding
-    folder = "test_images/yes" if case_type == "Tumor Cases" else "test_images/no"
-    selected_file = f"{GITHUB_RAW_URL}{folder}/{selected_demo.replace(' ', '%20')}"
+        if input_method == "Upload Image":
+            selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
+        else:
+            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+            demo_images = {
+                "Tumor Cases": [
+                    "Y1.jpg",
+                    "Y2.jpg",
+                    "Y3.jpg",
+                    "Y4.jpg",
+                    "Y5.jpg"
+                ],
+                "Normal Cases": [
+                    "1_no.jpeg",
+                    "2_no.jpeg"
+                ]
+            }
+            case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
+            selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
+            
+            # Create URL with proper encoding
+            folder = "test_images/yes" if case_type == "Tumor Cases" else "test_images/no"
+            selected_file = f"{GITHUB_RAW_URL}{folder}/{selected_demo.replace(' ', '%20')}"
         
         st.subheader("📊 System Metrics")
         total_analyses = len(st.session_state.analysis_history)
