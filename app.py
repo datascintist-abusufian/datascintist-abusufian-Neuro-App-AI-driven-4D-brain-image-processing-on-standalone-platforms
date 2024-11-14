@@ -229,9 +229,7 @@ def main():
                 ],
                 "Normal Cases": [
                     "1 no.jpeg",
-                    "2 no.jpeg",
-                    "50 no.jpeg",
-                    "98 no.jpeg"
+                    "2 no.jpeg"
                 ]
             }
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
