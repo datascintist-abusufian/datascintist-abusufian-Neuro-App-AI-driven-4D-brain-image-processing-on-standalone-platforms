@@ -1,7 +1,6 @@
 import io
 from datetime import datetime
 import requests  
-import os
 import numpy as np
 import streamlit as st
 from PIL import Image
@@ -77,7 +76,6 @@ def load_cached_model(model_url):
         st.error(f"Error loading model: {str(e)}")
         return None
 
-# Calculate advanced metrics
 def calculate_advanced_metrics(img_array):
     gray_img = cv2.cvtColor((img_array * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
     metrics = {
@@ -100,7 +98,6 @@ def calculate_advanced_metrics(img_array):
     metrics['LBP Variance'] = np.var(lbp)
     return metrics
 
-# Sensitivity Analysis
 def perform_sensitivity_analysis(model, image_array, n_iterations=10):
     orig_pred = model.predict(image_array, verbose=0)
     orig_result = np.argmax(orig_pred[0])
@@ -120,8 +117,6 @@ def perform_sensitivity_analysis(model, image_array, n_iterations=10):
         blur_pred = model.predict(blurred_image, verbose=0)
         blur_impacts.append(np.abs(blur_pred[0][orig_result] - orig_pred[0][orig_result]) * 100)
 
-    stability = 100 - (np.mean(noise_impacts + blur_impacts))
-    
     plt.figure(figsize=(10, 5))
     plt.plot(confidences, label='Confidence Under Noise', marker='o')
     plt.xlabel('Iterations')
@@ -136,7 +131,6 @@ def perform_sensitivity_analysis(model, image_array, n_iterations=10):
         'Confidence (%)': confidences
     })
 
-# Visualization Functions
 def plot_intensity_profile(img_array):
     center_row = img_array[img_array.shape[0] // 2, :]
     fig = go.Figure()
@@ -171,7 +165,6 @@ def create_3d_visualization(img_array):
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# ImageAnalyzer Class
 class ImageAnalyzer:
     def __init__(self):
         self.config = load_config()
@@ -192,7 +185,6 @@ class ImageAnalyzer:
 
     def display_slice_views(self, image_array):
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-        
         axes[0].imshow(image_array, cmap='gray')
         axes[0].set_title('Original View')
         
@@ -209,15 +201,11 @@ class ImageAnalyzer:
 
 def main():
     config = load_config()
-    
-    # Display header GIF
     st.image(config['GIF_PATH'], width=800)
     
-    # Initialize session states
     if 'analysis_history' not in st.session_state:
         st.session_state.analysis_history = []
     
-    # Sidebar
     with st.sidebar:
         st.title("🧠 Brain Tumor Detection")
         input_method = st.radio("Select Input Method", ["Upload Image", "Use Sample Images"])
@@ -225,26 +213,13 @@ def main():
         if input_method == "Upload Image":
             selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
         else:
-            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/datascintist-abusufian-Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
-
+            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
             demo_images = {
-                "Tumor Cases": [
-                    "Y1.jpg",
-                    "Y2.jpg",
-                    "Y3.jpg",
-                    "Y4.jpg",
-                    "Y5.jpg"
-                ],
-                "Normal Cases": [
-                    "1_no.jpeg",
-                    "2_no.jpeg"
-                    "3 no.jpg"
-                ]
+                "Tumor Cases": ["Y1.jpg", "Y2.jpg", "Y3.jpg", "Y4.jpg", "Y5.jpg"],
+                "Normal Cases": ["1_no.jpeg", "2_no.jpeg"]
             }
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
-            
-            # Create URL with proper encoding
             folder = "test_images/yes" if case_type == "Tumor Cases" else "test_images/no"
             selected_file = f"{GITHUB_RAW_URL}{folder}/{selected_demo.replace(' ', '%20')}"
         
@@ -268,9 +243,7 @@ def main():
         
         try:
             if isinstance(selected_file, str):
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                }
+                headers = {'User-Agent': 'Mozilla/5.0'}
                 response = requests.get(selected_file, headers=headers)
                 if response.status_code == 200:
                     image = Image.open(io.BytesIO(response.content))
@@ -298,11 +271,9 @@ def main():
                         mode="gauge+number",
                         value=confidence,
                         title={'text': "Detection Confidence"},
-                        gauge={
-                            'axis': {'range': [0, 100]},
-                            'bar': {'color': "darkred" if result == 1 else "green"},
-                            'threshold': {'line': {'color': "red", 'width': 4}, 'value': 70}
-                        }
+                        gauge={'axis': {'range': [0, 100]},
+                               'bar': {'color': "darkred" if result == 1 else "green"},
+                               'threshold': {'line': {'color': "red", 'width': 4}, 'value': 70}}
                     ))
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -326,7 +297,7 @@ def main():
                 plt.title("Advanced Metrics")
                 for p in ax.patches:
                     ax.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2, p.get_height()),
-                              ha='center', va='bottom')
+                                ha='center', va='bottom')
                 st.pyplot(plt)
             
             # Sensitivity Analysis Tab
@@ -345,21 +316,18 @@ def main():
             # Advanced Visualizations Tab
             with tab5:
                 st.header("Advanced MRI Visualizations")
-                
                 col1, col2 = st.columns(2)
                 
                 with col1:
                     st.subheader("Multi-View Analysis")
                     gray_img = cv2.cvtColor((img_array[0] * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
                     analyzer.display_slice_views(gray_img)
-                    
                     st.subheader("Intensity Profile")
                     plot_intensity_profile(gray_img)
                 
                 with col2:
                     st.subheader("Region Segmentation")
                     show_region_segmentation(gray_img)
-                    
                     st.subheader("3D Visualization")
                     create_3d_visualization(gray_img)
 
@@ -371,7 +339,6 @@ def main():
                 - **3D Visualization**: Shows intensity values as a 3D surface plot
                 """)
             
-            # Update history
             st.session_state.analysis_history.append({
                 "timestamp": datetime.now(),
                 "result": int(result) if result is not None else None,
