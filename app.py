@@ -229,6 +229,7 @@ def main():
                 ],
                 "Normal Cases": [
                     "1 no.jpeg",
+                    "2 no.jpeg",
                     "3 no.jpeg",
                     "4 no.jpeg"
                 ]
