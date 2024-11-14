@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS for styling
 st.markdown("""
     <style>
     .main {padding-top: 2rem;}
@@ -41,13 +41,12 @@ st.markdown("""
 
 @st.cache_data
 def load_config():
-    GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+    BASE_GITHUB_URL = "https://github.com/datascintist-abusufian/datascintist-abusufian-Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/blob/main/"
     return {
-        'BASE_DIR': '.',
-        'MODEL_PATH': f"{GITHUB_RAW_URL}BrainTumor10EpochsCategorical.h5",
-        'GIF_PATH': f"{GITHUB_RAW_URL}TAC_Brain_tumor_glioblastoma-Transverse_plane.gif",
-        'YES_IMAGES_DIR': f"{GITHUB_RAW_URL}test_images/yes",
-        'NO_IMAGES_DIR': f"{GITHUB_RAW_URL}test_images/no"
+        'MODEL_PATH': f"{BASE_GITHUB_URL}BrainTumor10EpochsCategorical.h5?raw=true",
+        'GIF_PATH': f"{BASE_GITHUB_URL}TAC_Brain_tumor_glioblastoma-Transverse_plane.gif?raw=true",
+        'YES_IMAGES_DIR': BASE_GITHUB_URL + "test_images/yes/",
+        'NO_IMAGES_DIR': BASE_GITHUB_URL + "test_images/no/"
     }
 
 @st.cache_resource
@@ -67,15 +66,14 @@ def download_model(url):
 
 @st.cache_resource
 def load_cached_model(model_url):
-    try:
-        model_path = download_model(model_url)
-        if model_path:
-            return load_model(model_path)
-        return None
-    except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
+    model_path = download_model(model_url)
+    if model_path:
+        return load_model(model_path)
+    else:
+        st.error("Model loading failed.")
         return None
 
+# Calculate advanced metrics
 def calculate_advanced_metrics(img_array):
     gray_img = cv2.cvtColor((img_array * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
     metrics = {
@@ -98,6 +96,7 @@ def calculate_advanced_metrics(img_array):
     metrics['LBP Variance'] = np.var(lbp)
     return metrics
 
+# Sensitivity Analysis
 def perform_sensitivity_analysis(model, image_array, n_iterations=10):
     orig_pred = model.predict(image_array, verbose=0)
     orig_result = np.argmax(orig_pred[0])
@@ -117,6 +116,8 @@ def perform_sensitivity_analysis(model, image_array, n_iterations=10):
         blur_pred = model.predict(blurred_image, verbose=0)
         blur_impacts.append(np.abs(blur_pred[0][orig_result] - orig_pred[0][orig_result]) * 100)
 
+    stability = 100 - (np.mean(noise_impacts + blur_impacts))
+    
     plt.figure(figsize=(10, 5))
     plt.plot(confidences, label='Confidence Under Noise', marker='o')
     plt.xlabel('Iterations')
@@ -131,6 +132,7 @@ def perform_sensitivity_analysis(model, image_array, n_iterations=10):
         'Confidence (%)': confidences
     })
 
+# Visualization Functions
 def plot_intensity_profile(img_array):
     center_row = img_array[img_array.shape[0] // 2, :]
     fig = go.Figure()
@@ -165,6 +167,7 @@ def create_3d_visualization(img_array):
     )
     st.plotly_chart(fig, use_container_width=True)
 
+# ImageAnalyzer Class
 class ImageAnalyzer:
     def __init__(self):
         self.config = load_config()
@@ -185,6 +188,7 @@ class ImageAnalyzer:
 
     def display_slice_views(self, image_array):
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        
         axes[0].imshow(image_array, cmap='gray')
         axes[0].set_title('Original View')
         
@@ -201,6 +205,7 @@ class ImageAnalyzer:
 
 def main():
     config = load_config()
+    
     st.image(config['GIF_PATH'], width=800)
     
     if 'analysis_history' not in st.session_state:
@@ -213,15 +218,23 @@ def main():
         if input_method == "Upload Image":
             selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
         else:
-            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+            GITHUB_BASE_URL = config['YES_IMAGES_DIR']
             demo_images = {
-                "Tumor Cases": ["Y1.jpg", "Y2.jpg", "Y3.jpg", "Y4.jpg", "Y5.jpg"],
-                "Normal Cases": ["1_no.jpeg", "2_no.jpeg"]
+                "Tumor Cases": [
+                    "Y1.jpg",
+                    "Y2.jpg",
+                    "Y3.jpg"
+                ],
+                "Normal Cases": [
+                    "1 no.jpeg",
+                    "2 no.jpeg"
+                ]
             }
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
-            folder = "test_images/yes" if case_type == "Tumor Cases" else "test_images/no"
-            selected_file = f"{GITHUB_RAW_URL}{folder}/{selected_demo.replace(' ', '%20')}"
+            
+            folder = "yes" if case_type == "Tumor Cases" else "no"
+            selected_file = f"{GITHUB_BASE_URL}{selected_demo}?raw=true"
         
         st.subheader("📊 System Metrics")
         total_analyses = len(st.session_state.analysis_history)
@@ -243,13 +256,14 @@ def main():
         
         try:
             if isinstance(selected_file, str):
-                headers = {'User-Agent': 'Mozilla/5.0'}
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
                 response = requests.get(selected_file, headers=headers)
                 if response.status_code == 200:
                     image = Image.open(io.BytesIO(response.content))
                 else:
                     st.error(f"Failed to load image from URL: Status code {response.status_code}")
-                    st.error(f"URL: {selected_file}")
                     return
             else:
                 image = Image.open(selected_file)
@@ -258,7 +272,6 @@ def main():
             img_array = analyzer.process_image(image)
             result, confidence, inference_time = analyzer.predict(img_array)
             
-            # Main Analysis Tab
             with tab1:
                 col1, col2 = st.columns([1, 1])
                 
@@ -271,9 +284,11 @@ def main():
                         mode="gauge+number",
                         value=confidence,
                         title={'text': "Detection Confidence"},
-                        gauge={'axis': {'range': [0, 100]},
-                               'bar': {'color': "darkred" if result == 1 else "green"},
-                               'threshold': {'line': {'color': "red", 'width': 4}, 'value': 70}}
+                        gauge={
+                            'axis': {'range': [0, 100]},
+                            'bar': {'color': "darkred" if result == 1 else "green"},
+                            'threshold': {'line': {'color': "red", 'width': 4}, 'value': 70}
+                        }
                     ))
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -284,7 +299,6 @@ def main():
                         st.success("✅ No Tumor Detected")
                         st.info("Regular check-ups are recommended.")
             
-            # Advanced Metrics Tab
             with tab2:
                 st.header("📊 Advanced Metrics")
                 metrics = calculate_advanced_metrics(img_array[0])
@@ -297,37 +311,37 @@ def main():
                 plt.title("Advanced Metrics")
                 for p in ax.patches:
                     ax.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2, p.get_height()),
-                                ha='center', va='bottom')
+                              ha='center', va='bottom')
                 st.pyplot(plt)
             
-            # Sensitivity Analysis Tab
             with tab3:
                 st.header("📈 Sensitivity Analysis")
                 analysis_df = perform_sensitivity_analysis(analyzer.model, img_array)
                 st.table(analysis_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
             
-            # Historical Data Tab
             with tab4:
                 st.header("📜 Historical Data")
                 if st.session_state.analysis_history:
                     historical_df = pd.DataFrame(st.session_state.analysis_history)
                     st.table(historical_df.style.set_table_styles([{'selector': 'th', 'props': [('font-weight', 'bold')]}]))
             
-            # Advanced Visualizations Tab
             with tab5:
                 st.header("Advanced MRI Visualizations")
+                
                 col1, col2 = st.columns(2)
                 
                 with col1:
                     st.subheader("Multi-View Analysis")
                     gray_img = cv2.cvtColor((img_array[0] * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
                     analyzer.display_slice_views(gray_img)
+                    
                     st.subheader("Intensity Profile")
                     plot_intensity_profile(gray_img)
                 
                 with col2:
                     st.subheader("Region Segmentation")
                     show_region_segmentation(gray_img)
+                    
                     st.subheader("3D Visualization")
                     create_3d_visualization(gray_img)
 
@@ -349,8 +363,6 @@ def main():
             
         except Exception as e:
             st.error(f"Error processing image: {str(e)}")
-            st.error(f"Error details: {type(e).__name__}")
-            return
     
     else:
         st.info("👆 Please select an input method and image to begin analysis.")
