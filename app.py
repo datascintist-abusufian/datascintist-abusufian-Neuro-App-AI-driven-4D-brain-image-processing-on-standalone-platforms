@@ -31,8 +31,8 @@ def load_config():
         'BASE_DIR': '.',
         'MODEL_PATH': f"{GITHUB_RAW_URL}BrainTumor10EpochsCategorical.h5",
         'GIF_PATH': f"{GITHUB_RAW_URL}TAC_Brain_tumor_glioblastoma-Transverse_plane.gif",
-        'YES_IMAGES_DIR': 'test_images/yes',
-        'NO_IMAGES_DIR': 'test_images/no'
+        'YES_IMAGES_DIR': f"{GITHUB_RAW_URL}test_images/yes",
+        'NO_IMAGES_DIR': f"{GITHUB_RAW_URL}test_images/no"
     }
 
 # Add function to download model
@@ -224,7 +224,11 @@ def main():
             }
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
-            selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
+            #Construct the correct URL based on case type
+            if case_type=="Tumor Cases":
+               selected_file = f"{GITHUB_RAW_URL}test_images/yes/{selected_demo}"
+            else:
+               selected_file=f"{GITHUB_RAW_URL}test_images/no/{selected_demo}"
         
         st.subheader("📊 System Metrics")
         total_analyses = len(st.session_state.analysis_history)
