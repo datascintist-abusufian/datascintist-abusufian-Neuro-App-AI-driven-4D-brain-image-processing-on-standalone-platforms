@@ -1,7 +1,6 @@
 import io
 from datetime import datetime
 import requests  
-import os
 import numpy as np
 import streamlit as st
 from PIL import Image
@@ -28,40 +27,40 @@ st.set_page_config(
 def load_config():
     GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
     return {
-        'BASE_DIR': '.',
+        'BASE_DIR': GITHUB_RAW_URL,
         'MODEL_PATH': f"{GITHUB_RAW_URL}BrainTumor10EpochsCategorical.h5",
         'GIF_PATH': f"{GITHUB_RAW_URL}TAC_Brain_tumor_glioblastoma-Transverse_plane.gif",
-        'YES_IMAGES_DIR': f"{GITHUB_RAW_URL}test_images/yes",
-        'NO_IMAGES_DIR': f"{GITHUB_RAW_URL}test_images/no"
+        'YES_IMAGES_DIR': 'test_images/yes',
+        'NO_IMAGES_DIR': 'test_images/no'
     }
 
-# Add function to download model
+# Function to verify URL availability
+def verify_url(url):
+    try:
+        response = requests.get(url)
+        return response.status_code == 200
+    except:
+        return False
+
+# Function to download the model if available
 @st.cache_resource
 def download_model(url):
-    try:
+    if verify_url(url):
         response = requests.get(url)
         if response.status_code == 200:
             with open('model.h5', 'wb') as f:
                 f.write(response.content)
             return 'model.h5'
-        else:
-            st.error(f"Failed to download model: {response.status_code}")
-            return None
-    except Exception as e:
-        st.error(f"Error downloading model: {str(e)}")
-        return None
+    st.error(f"Failed to download model: URL not found or inaccessible.")
+    return None
 
-# Modify model loading
+# Load the model with caching
 @st.cache_resource
 def load_cached_model(model_url):
-    try:
-        model_path = download_model(model_url)
-        if model_path:
-            return load_model(model_path)
-        return None
-    except Exception as e:
-        st.error(f"Error loading model: {str(e)}")
-        return None
+    model_path = download_model(model_url)
+    if model_path:
+        return load_model(model_path)
+    return None
 
 # Calculate advanced metrics
 def calculate_advanced_metrics(img_array):
@@ -83,7 +82,7 @@ def calculate_advanced_metrics(img_array):
     metrics['LBP Variance'] = np.var(lbp)
     return metrics
 
-# Sensitivity Analysis with detailed table
+# Sensitivity analysis function
 def perform_sensitivity_analysis(model, image_array, n_iterations=10):
     orig_pred = model.predict(image_array, verbose=0)
     orig_result = np.argmax(orig_pred[0])
@@ -105,7 +104,6 @@ def perform_sensitivity_analysis(model, image_array, n_iterations=10):
 
     stability = 100 - (np.mean(noise_impacts + blur_impacts))
     
-    # Plotting
     plt.figure(figsize=(10, 5))
     plt.plot(confidences, label='Confidence Under Noise', marker='o')
     plt.xlabel('Iterations')
@@ -120,7 +118,7 @@ def perform_sensitivity_analysis(model, image_array, n_iterations=10):
         'Confidence (%)': confidences
     })
 
-# ImageAnalyzer class
+# ImageAnalyzer class for processing and prediction
 class ImageAnalyzer:
     def __init__(self):
         self.config = load_config()
@@ -142,16 +140,13 @@ class ImageAnalyzer:
     def display_slice_views(self, image_array):
         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
         
-        # Original view
         axes[0].imshow(image_array, cmap='gray')
         axes[0].set_title('Original View')
         
-        # Enhanced contrast view
         enhanced = exposure.equalize_adapthist(image_array)
         axes[1].imshow(enhanced, cmap='gray')
         axes[1].set_title('Enhanced Contrast')
         
-        # Edge detection view
         edges = cv2.Canny(image_array, 100, 200)
         axes[2].imshow(edges, cmap='gray')
         axes[2].set_title('Edge Detection')
@@ -196,7 +191,11 @@ def create_3d_visualization(img_array):
     
 def main():
     config = load_config()
-    st.image(config['GIF_PATH'], width=800)
+    
+    if verify_url(config['GIF_PATH']):
+        st.image(config['GIF_PATH'], width=800)
+    else:
+        st.warning("GIF not available at the specified URL.")
     
     if 'analysis_history' not in st.session_state:
         st.session_state.analysis_history = []
@@ -208,7 +207,7 @@ def main():
         if input_method == "Upload Image":
             selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
         else:
-            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+            GITHUB_RAW_URL = config['BASE_DIR']
             demo_images = {
                 "Tumor Cases": [
                     "test_images/yes/Y1.jpg",
@@ -224,35 +223,22 @@ def main():
             }
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
-            #Construct the correct URL based on case type
-            if case_type=="Tumor Cases":
-               selected_file = f"{GITHUB_RAW_URL}test_images/yes/{selected_demo}"
-            else:
-               selected_file=f"{GITHUB_RAW_URL}test_images/no/{selected_demo}"
-        
-        st.subheader("📊 System Metrics")
-        total_analyses = len(st.session_state.analysis_history)
-        successful_analyses = sum(1 for x in st.session_state.analysis_history if x.get('success', False))
-        success_rate = (successful_analyses / total_analyses) * 100 if total_analyses > 0 else 0
-        st.metric("Total Analyses", total_analyses)
-        st.metric("Success Rate", f"{success_rate:.1f}%")
+            selected_file = f"{GITHUB_RAW_URL}{selected_demo}"
+            
+            if not verify_url(selected_file):
+                st.error("Selected image is not available at the specified URL.")
+                return
 
     st.title("4D AI Driven Neuro App - Advanced Analytics")
     
-    if selected_file:
+    if selected_file and verify_url(selected_file):
         tab1, tab2, tab3, tab4, tab5 = st.tabs(["🎯 Main Analysis", "📊 Advanced Metrics", "📈 Sensitivity Analysis", "📜 Historical Data", "🔍 Advanced Visualizations"])
         
         try:
             if isinstance(selected_file, str):
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                }
+                headers = {'User-Agent': 'Mozilla/5.0'}
                 response = requests.get(selected_file, headers=headers)
-                if response.status_code == 200:
-                    image = Image.open(io.BytesIO(response.content))
-                else:
-                    st.error(f"Failed to load image from URL: Status code {response.status_code}")
-                    return
+                image = Image.open(io.BytesIO(response.content))
             else:
                 image = Image.open(selected_file)
                 
@@ -266,11 +252,9 @@ def main():
         
         with tab1:
             col1, col2 = st.columns([1, 1])
-            
             with col1:
                 st.image(image, caption="Input MRI Image", use_container_width=True)
                 st.metric("Processing Time", f"{inference_time:.3f}s")
-            
             with col2:
                 fig = go.Figure(go.Indicator(
                     mode="gauge+number",
@@ -316,21 +300,18 @@ def main():
                 
         with tab5:
             st.header("Advanced MRI Visualizations")
-            
             col1, col2 = st.columns(2)
             
             with col1:
                 st.subheader("Multi-View Analysis")
                 gray_img = cv2.cvtColor((img_array[0] * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY)
                 analyzer.display_slice_views(gray_img)
-                
                 st.subheader("Intensity Profile")
                 plot_intensity_profile(gray_img)
             
             with col2:
                 st.subheader("Region Segmentation")
                 show_region_segmentation(gray_img)
-                
                 st.subheader("3D Visualization")
                 create_3d_visualization(gray_img)
 
