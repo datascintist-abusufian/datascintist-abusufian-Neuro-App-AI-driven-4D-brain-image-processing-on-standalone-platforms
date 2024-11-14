@@ -225,7 +225,8 @@ def main():
         if input_method == "Upload Image":
             selected_file = st.file_uploader("Upload MRI Image", type=['jpg', 'jpeg', 'png'])
         else:
-            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+            GITHUB_RAW_URL = "https://raw.githubusercontent.com/datascintist-abusufian/datascintist-abusufian-Neuro-App-AI-driven-4D-brain-image-processing-on-standalone-platforms/main/"
+demo_images = {
             demo_images = {
                 "Tumor Cases": [
                     "Y1.jpg",
@@ -237,6 +238,7 @@ def main():
                 "Normal Cases": [
                     "1_no.jpeg",
                     "2_no.jpeg"
+                    "3 no.jpg"
                 ]
             }
             case_type = st.selectbox("Select case type:", ["Tumor Cases", "Normal Cases"])
