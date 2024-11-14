@@ -226,11 +226,12 @@ def main():
                     "Y2.jpg",
                     "Y3.jpg",
                     "Y4.jpg",
+                    "Y5.jpg"
                 ],
                 "Normal Cases": [
                     "1 no.jpeg",
-                    "3 no.jpeg"
-                    "4 no.jpeg"
+                    "3 no.jpeg",
+                    "4 no.jpeg",
                     "5 no.jpeg"
                 ]
             }
