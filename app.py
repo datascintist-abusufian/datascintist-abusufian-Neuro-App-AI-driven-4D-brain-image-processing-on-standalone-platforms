@@ -238,7 +238,7 @@ def main():
             
             folder = "yes" if case_type == "Tumor Cases" else "no"
             encoded_filename = urllib.parse.quote(selected_demo)
-            selected_file = f"{config['YES_IMAGES_DIR'] if folder == 'yes' else config['NO_IMAGES_DIR']}{encoded_filename}?raw=true"
+            selected_file = f"{BASE_GITHUB_URL}{folder}/{selected_demo.replace(' ', '%20')}?raw=true"
         
         st.subheader("📊 System Metrics")
         total_analyses = len(st.session_state.analysis_history)
