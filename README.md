@@ -103,7 +103,7 @@ The app uses a TensorFlow model trained on MRI brain images to detect tumor pres
 
  ### License
 
-Distributed under the MIT License. See LICENSE for more information.
+Distributed under the university License. See LICENSE for more information.
 
 ### Contact
 
