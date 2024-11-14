@@ -14,6 +14,7 @@ import cv2
 import time
 from skimage import exposure
 from skimage.measure import label
+import urllib.parse
 
 # Set up page configuration
 st.set_page_config(
@@ -238,7 +239,8 @@ def main():
             selected_demo = st.selectbox("Choose a sample image:", demo_images[case_type])
             
             folder = "yes" if case_type == "Tumor Cases" else "no"
-            selected_file = f"{config['YES_IMAGES_DIR'] if folder == 'yes' else config['NO_IMAGES_DIR']}{selected_demo}?raw=true"
+            encoded_filename = urllib.parse.quote(selected_demo)
+            selected_file = f"{config['YES_IMAGES_DIR'] if folder == 'yes' else config['NO_IMAGES_DIR']}{encoded_filename}?raw=true"
         
         st.subheader("📊 System Metrics")
         total_analyses = len(st.session_state.analysis_history)
